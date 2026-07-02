@@ -1,6 +1,18 @@
 const mongoose = require('mongoose');
 
+let cachedConnection = null;
+
 const connectDB = async () => {
+  // If already connected, return immediately
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
+
+  // If a connection is already in progress, await it
+  if (cachedConnection) {
+    return cachedConnection;
+  }
+
   const mongoUri = process.env.MONGO_URI;
   if (!mongoUri) {
     const err = new Error('MONGO_URI is not set in environment variables');
@@ -9,14 +21,20 @@ const connectDB = async () => {
   }
 
   mongoose.set('strictQuery', true);
-  // Disable query buffering so that queries fail instantly if the database is not connected
-  mongoose.set('bufferCommands', false);
-  
-  // Add a 5s connection timeout to fail fast on network blocks (e.g. Atlas whitelisting)
-  await mongoose.connect(mongoUri, {
-    serverSelectionTimeoutMS: 5000
+  mongoose.set('bufferCommands', false); // Fail fast, no query buffering
+
+  cachedConnection = mongoose.connect(mongoUri, {
+    serverSelectionTimeoutMS: 5000 // 5 seconds timeout
+  }).then((mongooseInstance) => {
+    console.log('MongoDB connected successfully');
+    return mongooseInstance;
+  }).catch((err) => {
+    cachedConnection = null; // Reset cache on failure so we can retry on next request
+    console.error('Failed to establish MongoDB connection:', err.message);
+    throw err;
   });
-  console.log('MongoDB connected');
+
+  return cachedConnection;
 };
 
 module.exports = connectDB;

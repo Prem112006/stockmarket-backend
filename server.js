@@ -27,6 +27,16 @@ app.get('/', (req, res) => {
   res.json({ message: 'Stock Market Prediction Backend is running' });
 });
 
+// Middleware to ensure DB connection is ready before processing API requests
+app.use('/api', async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/stocks', stockRoutes);
 app.use('/api/prediction', predictionRoutes);
