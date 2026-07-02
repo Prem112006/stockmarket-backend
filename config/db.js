@@ -9,7 +9,10 @@ const connectDB = async () => {
   }
 
   mongoose.set('strictQuery', true);
-  await mongoose.connect(mongoUri);
+  // Add a 5s connection timeout to fail fast on network blocks (e.g. Atlas whitelisting)
+  await mongoose.connect(mongoUri, {
+    serverSelectionTimeoutMS: 5000
+  });
   console.log('MongoDB connected');
 };
 
