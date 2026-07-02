@@ -9,6 +9,9 @@ const connectDB = async () => {
   }
 
   mongoose.set('strictQuery', true);
+  // Disable query buffering so that queries fail instantly if the database is not connected
+  mongoose.set('bufferCommands', false);
+  
   // Add a 5s connection timeout to fail fast on network blocks (e.g. Atlas whitelisting)
   await mongoose.connect(mongoUri, {
     serverSelectionTimeoutMS: 5000
